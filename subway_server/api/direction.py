@@ -12,37 +12,48 @@ def direction():
     ---
     tags:
       - direction
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required: [from, to]
-            properties:
-              from: { type: string, example: "A" }
-              to:   { type: string, example: "B" }
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required: [from, to]
+          properties:
+            from:
+              type: string
+              example: "A"
+              description: 현재 노드 ID
+            to:
+              type: string
+              example: "B"
+              description: 다음 노드 ID
+          example:
+            from: "A"
+            to: "B"
     responses:
       200:
         description: 절대 각도 (정북=0°, 시계방향)
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                angle: { type: number, example: 90.0 }
+        schema:
+          type: object
+          properties:
+            angle:
+              type: number
+              example: 90.0
       400:
         description: INVALID_NODE / NOT_CONNECTED / INVALID_PAYLOAD
-        content:
-          application/json:
-            schema:
+        schema:
+          type: object
+          properties:
+            error:
               type: object
               properties:
-                error:
-                  type: object
-                  properties:
-                    code:    { type: string }
-                    message: { type: string }
+                code:    { type: string, example: "NOT_CONNECTED" }
+                message: { type: string, example: "Nodes 'A' and 'F' are not directly connected" }
     """
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):

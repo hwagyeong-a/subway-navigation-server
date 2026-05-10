@@ -11,35 +11,59 @@ def locate():
     ---
     tags:
       - locate
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required: [wifi]
-            properties:
-              wifi:
-                type: array
-                items:
-                  type: object
-                  required: [bssid, rssi]
-                  properties:
-                    bssid: { type: string,  example: "aa:bb:cc:dd:ee:ff" }
-                    rssi:  { type: integer, example: -65 }
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required: [wifi]
+          properties:
+            wifi:
+              type: array
+              description: 측정된 Wi-Fi AP 목록
+              items:
+                type: object
+                required: [bssid, rssi]
+                properties:
+                  bssid: { type: string,  example: "aa:bb:cc:dd:ee:ff", description: AP MAC 주소 }
+                  rssi:  { type: integer, example: -65, description: 신호 세기 (dBm) }
+          example:
+            wifi:
+              - { bssid: "aa:bb:cc:dd:ee:ff", rssi: -65 }
+              - { bssid: "11:22:33:44:55:66", rssi: -72 }
+              - { bssid: "77:88:99:aa:bb:cc", rssi: -88 }
     responses:
       200:
         description: 추정된 노드 ID
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                node: { type: string, example: "B" }
+        schema:
+          type: object
+          properties:
+            node: { type: string, example: "B" }
       400:
         description: INVALID_PAYLOAD / EMPTY_WIFI
+        schema:
+          type: object
+          properties:
+            error:
+              type: object
+              properties:
+                code:    { type: string, example: "EMPTY_WIFI" }
+                message: { type: string, example: "'wifi' must not be empty" }
       500:
         description: KNN_ERROR — 추정 모듈 미등록 또는 내부 오류
+        schema:
+          type: object
+          properties:
+            error:
+              type: object
+              properties:
+                code:    { type: string, example: "KNN_ERROR" }
+                message: { type: string, example: "No estimator registered. ..." }
     """
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):

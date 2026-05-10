@@ -11,32 +11,59 @@ def route():
     ---
     tags:
       - route
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required: [from, to]
-            properties:
-              from: { type: string, example: "A" }
-              to:   { type: string, example: "F" }
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required: [from, to]
+          properties:
+            from:
+              type: string
+              example: "A"
+              description: 출발 노드 ID
+            to:
+              type: string
+              example: "F"
+              description: 목적지 노드 ID (위험 노드 지정 시 400)
+          example:
+            from: "A"
+            to: "F"
     responses:
       200:
         description: 경로 (출발지 → 목적지 노드 ID 순서 배열)
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                path:
-                  type: array
-                  items: { type: string }
-                  example: ["A", "B", "C", "D", "F"]
+        schema:
+          type: object
+          properties:
+            path:
+              type: array
+              items: { type: string }
+              example: ["A", "B", "C", "D", "F"]
       400:
         description: INVALID_NODE / DANGER_DESTINATION / INVALID_PAYLOAD
+        schema:
+          type: object
+          properties:
+            error:
+              type: object
+              properties:
+                code:    { type: string, example: "DANGER_DESTINATION" }
+                message: { type: string, example: "Destination is a danger node: 'E'" }
       404:
         description: NO_ROUTE — 위험 노드 제외 시 도달 불가
+        schema:
+          type: object
+          properties:
+            error:
+              type: object
+              properties:
+                code:    { type: string, example: "NO_ROUTE" }
+                message: { type: string, example: "No safe route from 'A' to 'Z'" }
     """
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):

@@ -49,3 +49,9 @@
 ## 관련 커밋
 
 - `bb17d51` feat: initial Flask scaffold with 3 APIs, tests, and Swagger UI
+- `0a354d3` docs(worklog): record commit hash for initial scaffold entry
+
+## 후속 수정
+
+- Swagger UI에서 request body 예시가 안 보이는 이슈 수정. 원인: flasgger 기본 spec이 Swagger 2.0인데 docstring이 OpenAPI 3.0 문법(`requestBody`/`content`)으로 작성됨. Swagger 2.0의 `parameters` + `in: body` 형식으로 3개 endpoint(`/locate`, `/route`, `/direction`) docstring 변환. 응답 예시도 함께 보강.
+- `app.py` 의 host 기본값을 `0.0.0.0` → `127.0.0.1` 로 변경 (로컬 개발용으로 더 안전). `FLASK_HOST` env로 override 가능.
