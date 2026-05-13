@@ -49,3 +49,4 @@
 | 날짜 | 제목 |
 |---|---|
 | 2026-05-10 | [Initial scaffold (Flask + 3 APIs + tests + Swagger)](./2026-05-10-initial-scaffold.md) |
+| 2026-05-12 | [Initial scaffold (DB connection + fingerprint repo + KNN locator)](./2026-05-12-initial-scaffold.md) |
