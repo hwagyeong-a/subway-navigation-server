@@ -5,7 +5,6 @@
 -- ============================================================
 
 -- 0. 클린 빌드 (개발 환경에서만! 운영에서는 절대 실행하지 말 것)
-DROP DATABASE IF EXISTS subway_nav;
 CREATE DATABASE subway_nav CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE subway_nav;
 
