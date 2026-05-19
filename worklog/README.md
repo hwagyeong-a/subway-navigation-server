@@ -49,3 +49,4 @@
 | 날짜 | 제목 |
 |---|---|
 | 2026-05-10 | [Initial scaffold (Flask + 3 APIs + tests + Swagger)](./2026-05-10-initial-scaffold.md) |
+| 2026-05-19 | [팀 진척 상황 정리 (단톡방 동기화)](./2026-05-19-team-progress-update.md) |
