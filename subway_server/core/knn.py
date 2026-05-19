@@ -1,0 +1,83 @@
+"""Team B: KNN 기반 위치 추정기 (scikit-learn 채택).
+
+CLAUDE.md 'Wi-Fi pipeline split' 준수:
+- Team A 의 core/wifi.py::normalize_wifi 를 입력 정렬에 활용
+- B 의 knn_estimate 가 normalize_wifi + FingerprintRepository 둘 다 호출
+"""
+from typing import List, Optional
+
+import numpy as np
+from flask import current_app
+from sklearn.neighbors import KNeighborsClassifier
+
+from ..db.fingerprint import FingerprintRepository
+from .locator import WifiSample
+from .wifi import normalize_wifi
+from .wifi_filter import filter_wifi_samples
+
+
+K = 3
+
+_bssid_order: Optional[List[str]] = None
+_classifier: Optional[KNeighborsClassifier] = None
+_loaded: bool = False
+
+
+def _ensure_loaded() -> None:
+    """첫 호출 시 DB 에서 학습 데이터 로드 + sklearn KNN 학습."""
+    global _bssid_order, _classifier, _loaded
+    if _loaded:
+        return
+
+    repo = FingerprintRepository()
+    _bssid_order = repo.list_bssid_order()
+    train_data = repo.load_training_set()
+
+    if not train_data:
+        _loaded = True
+        return
+
+    X = np.array([vec for _, vec in train_data], dtype=np.float32)
+    y = np.array([node_id for node_id, _ in train_data])
+
+    k_actual = min(K, len(train_data))
+    _classifier = KNeighborsClassifier(
+        n_neighbors=k_actual,
+        weights="distance",
+        metric="euclidean",
+    )
+    _classifier.fit(X, y)
+    _loaded = True
+
+    current_app.logger.info(
+        "KNN loaded: %d BSSIDs, %d nodes, K=%d",
+        len(_bssid_order), len(train_data), k_actual,
+    )
+
+
+def _to_vector(samples: List[WifiSample]) -> np.ndarray:
+    """A 의 normalize_wifi 로 정렬."""
+    vec = normalize_wifi(samples, _bssid_order or [])
+    return np.array([vec], dtype=np.float32)
+
+
+def knn_estimate(samples: List[WifiSample]) -> str:
+    """Wi-Fi 스캔으로 가장 가까운 노드(location)를 예측."""
+    if not samples:
+        raise ValueError("Empty Wi-Fi samples")
+
+    filtered = filter_wifi_samples(samples)
+    if not filtered:
+        raise ValueError("All Wi-Fi samples below RSSI threshold")
+
+    _ensure_loaded()
+
+    if _classifier is None:
+        raise RuntimeError(
+            "KNN classifier not initialized — "
+            "no fingerprint training data in DB"
+        )
+
+    query = _to_vector(filtered)
+    pred = _classifier.predict(query)[0]
+    return str(pred)
