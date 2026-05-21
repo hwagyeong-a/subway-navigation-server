@@ -40,4 +40,5 @@
 - (선택) `/locate` E2E with real KNN — MySQL 통합
 
 ## 관련 커밋
-- (커밋 후 해시 추가 예정)
+- `da829bd` docs: add 2차 개발 계획 (실데이터 통합 + E2E 테스트)
+- `946cd07` feat: integrate 박경찬 real data + add E2E (Playwright Swagger UI) tests
