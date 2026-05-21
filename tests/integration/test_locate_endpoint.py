@@ -2,13 +2,13 @@ from subway_server.core import locator
 
 
 def test_locate_returns_estimator_result(client, fake_estimator):
-    fake_estimator("B")
+    fake_estimator("fare_gate")
     res = client.post(
         "/locate",
         json={"wifi": [{"bssid": "aa:bb:cc:dd:ee:ff", "rssi": -65}]},
     )
     assert res.status_code == 200
-    assert res.get_json() == {"node": "B"}
+    assert res.get_json() == {"node": "fare_gate"}
 
 
 def test_locate_empty_wifi_returns_400(client):

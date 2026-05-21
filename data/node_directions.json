@@ -1,0 +1,22 @@
+[
+  { "from": "b1_down_stairs_front", "to": "b1_elevator",          "heading_degrees": 30,  "cardinal": "NE", "clock_position": 1  },
+  { "from": "b1_down_stairs_front", "to": "b1_up_stairs_front",   "heading_degrees": 255, "cardinal": "W",  "clock_position": 8  },
+  { "from": "b1_down_stairs_front", "to": "down_platform",        "heading_degrees": 168, "cardinal": "S",  "clock_position": 6  },
+  { "from": "b1_elevator",          "to": "b1_down_stairs_front", "heading_degrees": 255, "cardinal": "W",  "clock_position": 8  },
+  { "from": "b1_elevator",          "to": "b1_stairs",            "heading_degrees": 347, "cardinal": "N",  "clock_position": 12 },
+  { "from": "b1_stairs",            "to": "b1_elevator",          "heading_degrees": 180, "cardinal": "S",  "clock_position": 6  },
+  { "from": "b1_stairs",            "to": "stairs_mid",           "heading_degrees": 323, "cardinal": "NW", "clock_position": 11 },
+  { "from": "b1_up_stairs_front",   "to": "b1_down_stairs_front", "heading_degrees": 30,  "cardinal": "NE", "clock_position": 1  },
+  { "from": "b1_up_stairs_front",   "to": "up_platform",          "heading_degrees": 195, "cardinal": "S",  "clock_position": 6  },
+  { "from": "down_platform",        "to": "b1_down_stairs_front", "heading_degrees": 328, "cardinal": "NW", "clock_position": 11 },
+  { "from": "fare_gate",            "to": "floor1_hall",          "heading_degrees": 171, "cardinal": "S",  "clock_position": 6  },
+  { "from": "fare_gate",            "to": "floor1_stairs",        "heading_degrees": 324, "cardinal": "NW", "clock_position": 11 },
+  { "from": "floor1_hall",          "to": "fare_gate",            "heading_degrees": 334, "cardinal": "NW", "clock_position": 11 },
+  { "from": "floor1_hall",          "to": "station_exit",         "heading_degrees": 81,  "cardinal": "E",  "clock_position": 3  },
+  { "from": "floor1_stairs",        "to": "fare_gate",            "heading_degrees": 171, "cardinal": "S",  "clock_position": 6  },
+  { "from": "floor1_stairs",        "to": "stairs_mid",           "heading_degrees": 321, "cardinal": "NW", "clock_position": 11 },
+  { "from": "stairs_mid",           "to": "b1_stairs",            "heading_degrees": 177, "cardinal": "S",  "clock_position": 6  },
+  { "from": "stairs_mid",           "to": "floor1_stairs",        "heading_degrees": 182, "cardinal": "S",  "clock_position": 6  },
+  { "from": "station_exit",         "to": "floor1_hall",          "heading_degrees": 268, "cardinal": "W",  "clock_position": 9  },
+  { "from": "up_platform",          "to": "b1_up_stairs_front",   "heading_degrees": 330, "cardinal": "NW", "clock_position": 11 }
+]

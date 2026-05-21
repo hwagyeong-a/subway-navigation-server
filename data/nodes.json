@@ -1,8 +1,13 @@
 {
-  "A": { "x": 0,  "y": 0  },
-  "B": { "x": 5,  "y": 0  },
-  "C": { "x": 5,  "y": 5  },
-  "D": { "x": 5,  "y": 10 },
-  "E": { "x": 10, "y": 5  },
-  "F": { "x": 10, "y": 10 }
+  "station_exit":          { "node_order": 1,  "floor": "ground", "zone": "entrance", "description": "역 지상 출입구" },
+  "floor1_hall":           { "node_order": 2,  "floor": "1F",     "zone": "hall",     "description": "1층 홀" },
+  "fare_gate":             { "node_order": 3,  "floor": "1F",     "zone": "gate",     "description": "개찰구" },
+  "floor1_stairs":         { "node_order": 4,  "floor": "1F",     "zone": "stairs",   "description": "1층 계단 시작" },
+  "stairs_mid":            { "node_order": 5,  "floor": "mid",    "zone": "stairs",   "description": "층 사이 계단 중앙" },
+  "b1_stairs":             { "node_order": 6,  "floor": "B1",     "zone": "stairs",   "description": "지하 계단" },
+  "b1_elevator":           { "node_order": 7,  "floor": "B1",     "zone": "hall",     "description": "지하 엘리베이터 앞" },
+  "b1_down_stairs_front":  { "node_order": 8,  "floor": "B1",     "zone": "branch",   "description": "지하 하행 계단 앞 (3방향 분기)" },
+  "down_platform":         { "node_order": 9,  "floor": "B1",     "zone": "platform", "description": "하행 승강장" },
+  "b1_up_stairs_front":    { "node_order": 10, "floor": "B1",     "zone": "stairs",   "description": "지하 상행 계단 앞" },
+  "up_platform":           { "node_order": 11, "floor": "B1",     "zone": "platform", "description": "상행 승강장" }
 }

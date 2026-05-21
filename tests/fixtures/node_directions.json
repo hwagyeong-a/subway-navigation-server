@@ -1,0 +1,12 @@
+[
+  { "from": "station_exit",  "to": "floor1_hall",   "heading_degrees": 268, "cardinal": "W",  "clock_position": 9 },
+  { "from": "floor1_hall",   "to": "station_exit",  "heading_degrees": 81,  "cardinal": "E",  "clock_position": 3 },
+  { "from": "floor1_hall",   "to": "fare_gate",     "heading_degrees": 334, "cardinal": "NW", "clock_position": 11 },
+  { "from": "fare_gate",     "to": "floor1_hall",   "heading_degrees": 171, "cardinal": "S",  "clock_position": 6 },
+  { "from": "fare_gate",     "to": "floor1_stairs", "heading_degrees": 324, "cardinal": "NW", "clock_position": 11 },
+  { "from": "floor1_stairs", "to": "fare_gate",     "heading_degrees": 171, "cardinal": "S",  "clock_position": 6 },
+  { "from": "floor1_stairs", "to": "stairs_mid",    "heading_degrees": 321, "cardinal": "NW", "clock_position": 11 },
+  { "from": "stairs_mid",    "to": "floor1_stairs", "heading_degrees": 182, "cardinal": "S",  "clock_position": 6 },
+  { "from": "stairs_mid",    "to": "b1_stairs",     "heading_degrees": 177, "cardinal": "S",  "clock_position": 6 },
+  { "from": "b1_stairs",     "to": "stairs_mid",    "heading_degrees": 323, "cardinal": "NW", "clock_position": 11 }
+]

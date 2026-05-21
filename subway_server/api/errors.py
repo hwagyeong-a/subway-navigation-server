@@ -30,11 +30,6 @@ class InvalidNodeError(AppError):
     http_status = 400
 
 
-class DangerDestinationError(AppError):
-    code = "DANGER_DESTINATION"
-    http_status = 400
-
-
 class NotConnectedError(AppError):
     code = "NOT_CONNECTED"
     http_status = 400

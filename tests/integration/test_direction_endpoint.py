@@ -1,25 +1,37 @@
 def test_direction_happy_path(client):
-    # A=(0,0) → B=(5,0) is east → 90°
-    res = client.post("/direction", json={"from": "A", "to": "B"})
+    # station_exit → floor1_hall : 268° W 9시
+    res = client.post("/direction", json={"from": "station_exit", "to": "floor1_hall"})
     assert res.status_code == 200
-    assert res.get_json() == {"angle": 90.0}
+    assert res.get_json() == {"angle": 268, "cardinal": "W", "clock": 9}
 
 
-def test_direction_invalid_node_returns_400(client):
-    res = client.post("/direction", json={"from": "A", "to": "Q"})
+def test_direction_returns_three_fields(client):
+    res = client.post("/direction", json={"from": "floor1_hall", "to": "fare_gate"})
+    body = res.get_json()
+    assert set(body.keys()) == {"angle", "cardinal", "clock"}
+
+
+def test_direction_invalid_from_node_returns_400(client):
+    res = client.post("/direction", json={"from": "ghost", "to": "floor1_hall"})
+    assert res.status_code == 400
+    assert res.get_json()["error"]["code"] == "INVALID_NODE"
+
+
+def test_direction_invalid_to_node_returns_400(client):
+    res = client.post("/direction", json={"from": "station_exit", "to": "ghost"})
     assert res.status_code == 400
     assert res.get_json()["error"]["code"] == "INVALID_NODE"
 
 
 def test_direction_not_connected_returns_400(client):
-    # A and F are not directly connected.
-    res = client.post("/direction", json={"from": "A", "to": "F"})
+    # station_exit 와 b1_stairs 는 fixture 에서 직접 연결되지 않음
+    res = client.post("/direction", json={"from": "station_exit", "to": "b1_stairs"})
     assert res.status_code == 400
     assert res.get_json()["error"]["code"] == "NOT_CONNECTED"
 
 
 def test_direction_missing_field_returns_400(client):
-    res = client.post("/direction", json={"from": "A"})
+    res = client.post("/direction", json={"from": "station_exit"})
     assert res.status_code == 400
     assert res.get_json()["error"]["code"] == "INVALID_PAYLOAD"
 

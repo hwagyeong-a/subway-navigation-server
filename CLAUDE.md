@@ -13,9 +13,10 @@
 - Domain logic (`subway_server/core/`) is pure Python — no Flask imports.
 - DB layer (`subway_server/db/`) is Team B's territory; A only stubs interfaces.
 
-## Coordinate convention (do not change)
-North = 0°, East = 90°, South = 180°, West = 270° (CW positive).
-Matches phone compass. Pinned by 4 cardinal-direction unit tests in `tests/unit/test_direction.py` — those tests are a **contract**.
+## Coordinate convention
+North = 0°, East = 90°, South = 180°, West = 270° (CW positive). Matches phone compass.
+
+**방위각은 박경찬 실측 데이터를 그대로 반환** (`data/node_directions.json` / DB `node_directions` 테이블 조회). 더 이상 `atan2` 변환 로직 없음. 좌표(x, y)는 시스템에서 사용하지 않으며 `nodes.json` 은 `floor`, `zone`, `description` 메타데이터만 보유.
 
 ## Team B integration boundary
 - `subway_server/core/locator.py` defines `LocationEstimator = Callable[[list[WifiSample]], str]`.
@@ -41,8 +42,12 @@ All errors follow `docs/05-API명세.md §5.5`:
 ## Running and testing
 - Dev server: `python app.py` (port 5000, uses `.env` or defaults).
 - Swagger UI: `http://localhost:5000/apidocs`.
-- Tests: `pytest` from repo root. **No MySQL required** — TestConfig isolates state, estimator stub guards against DB calls.
-- Quick: `pytest tests/unit -q`. Full: `pytest`.
+- Tests:
+  - `pytest tests/unit tests/integration -q` — 빠른 로컬 (MySQL X, 브라우저 X)
+  - `pytest tests/e2e` — 실서버 subprocess + Playwright Chromium (E2E)
+  - `pytest` — 전체 약 72 테스트
+- E2E 첫 실행 전 `playwright install chromium` 필요 (~150MB, 1회만).
+- 단위/통합 테스트는 **MySQL 불필요** — TestConfig 격리 + estimator stub.
 
 ## Conventions
 - Type hints on every function signature (Python 3.10+).

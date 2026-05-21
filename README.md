@@ -44,13 +44,13 @@ python app.py
 # 스모크 테스트
 curl -X POST http://localhost:5000/direction \
   -H "Content-Type: application/json" \
-  -d '{"from":"A","to":"B"}'
-# → {"angle": 90.0}
+  -d '{"from":"station_exit","to":"floor1_hall"}'
+# → {"angle": 268, "cardinal": "W", "clock": 9}
 
 curl -X POST http://localhost:5000/route \
   -H "Content-Type: application/json" \
-  -d '{"from":"A","to":"F"}'
-# → {"path":["A","B","C","D","F"]}   (위험노드 E는 자동 제외)
+  -d '{"from":"station_exit","to":"down_platform"}'
+# → {"path":[{"node":"station_exit", "floor":"ground", ...}, ..., {"node":"down_platform", ...}]}
 ```
 
 > **주의**: `/locate` 는 Team B의 KNN 모듈이 등록되기 전까지 `KNN_ERROR` (500) 을 반환합니다 — 의도된 동작입니다.
@@ -60,12 +60,17 @@ curl -X POST http://localhost:5000/route \
 ## 🧪 테스트
 
 ```bash
-pytest                     # 전체
-pytest tests/unit -q       # 단위 테스트 (빠름)
-pytest tests/integration   # API 통합 테스트
+pytest tests/unit tests/integration -q  # 빠른 로컬 (MySQL X, 브라우저 X)
+pytest tests/e2e -v                     # E2E (실서버 subprocess + Playwright Chromium)
+pytest                                  # 전체 약 72 테스트
 ```
 
-테스트는 **MySQL이 필요 없습니다** — `TestConfig` 가 격리하고 `fake_estimator` fixture 가 KNN 호출을 차단합니다.
+단위/통합 테스트는 **MySQL이 필요 없습니다** — `TestConfig` 격리 + `fake_estimator` fixture로 KNN 호출 차단.
+
+E2E 테스트는 첫 실행 전 한 번:
+```bash
+playwright install chromium   # ~150MB, 1회만
+```
 
 ---
 

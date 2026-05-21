@@ -116,46 +116,61 @@ Content-Type: application/json
 
 ### 5.3.1 기능 설명
 
-출발 노드와 목적지 노드를 입력받아, **위험 노드를 회피한 최적 경로**를 노드 ID 배열로 반환한다.
+출발 노드와 목적지 노드를 입력받아 **hop 수 최소 경로**를 산출. 각 노드에는 `floor`, `zone`, `edge_to_next` 메타데이터가 포함된다.
+
+> **변경 이력 (2026-05-21)**: 좌표 기반 유클리드 비용 → hop 수 비용으로 단순화. 위험 노드 회피 로직 제거 (`edge_type` 으로 대체).
 
 ### 5.3.2 처리 순서
 
 ```mermaid
 flowchart LR
-    A[입력: from, to] --> B{위험 노드?}
-    B -- "to가 위험 노드" --> X[400 DANGER_DESTINATION]
-    B -- "정상" --> C[그래프 JSON 로드]
-    C --> D[위험 노드 제외하고<br/>Dijkstra 실행]
-    D --> E{경로 존재?}
-    E -- "없음" --> Y[404 NO_ROUTE]
-    E -- "있음" --> F[200 OK<br/>경로 반환]
+    A[입력: from, to] --> B[그래프 JSON 로드]
+    B --> C[Dijkstra<br/>cost = 1 per hop]
+    C --> D{경로 존재?}
+    D -- "없음" --> Y[404 NO_ROUTE]
+    D -- "있음" --> E[각 노드에<br/>floor / zone / edge_type 매핑]
+    E --> F[200 OK]
 ```
 
 ### 5.3.3 요청 (Request)
 
 ```json
 {
-  "from": "A",
-  "to": "F"
+  "from": "station_exit",
+  "to": "down_platform"
 }
 ```
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `from` | string | ✓ | 출발 노드 ID |
+| `from` | string | ✓ | 출발 노드 ID (location) |
 | `to` | string | ✓ | 목적지 노드 ID |
 
 ### 5.3.4 응답 (Response)
 
 ```json
 {
-  "path": ["A", "B", "C", "D", "F"]
+  "path": [
+    { "node": "station_exit",        "floor": "ground", "zone": "entrance", "edge_to_next": "flat" },
+    { "node": "floor1_hall",         "floor": "1F",     "zone": "hall",     "edge_to_next": "flat" },
+    { "node": "fare_gate",           "floor": "1F",     "zone": "gate",     "edge_to_next": "flat" },
+    { "node": "floor1_stairs",       "floor": "1F",     "zone": "stairs",   "edge_to_next": "stairs" },
+    { "node": "stairs_mid",          "floor": "mid",    "zone": "stairs",   "edge_to_next": "stairs" },
+    { "node": "b1_stairs",           "floor": "B1",     "zone": "stairs",   "edge_to_next": "flat" },
+    { "node": "b1_elevator",         "floor": "B1",     "zone": "hall",     "edge_to_next": "flat" },
+    { "node": "b1_down_stairs_front","floor": "B1",     "zone": "branch",   "edge_to_next": "branch" },
+    { "node": "down_platform",       "floor": "B1",     "zone": "platform", "edge_to_next": null }
+  ]
 }
 ```
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `path` | array&lt;string&gt; | 출발지 → 목적지 노드 ID의 순서 배열 (양 끝 포함) |
+| `path` | array&lt;object&gt; | 출발지 → 목적지 순서 |
+| `path[].node` | string | 노드 ID |
+| `path[].floor` | string | 층 (ground / 1F / mid / B1) |
+| `path[].zone` | string | 구역 종류 (entrance / hall / gate / stairs / branch / platform) |
+| `path[].edge_to_next` | string \| null | 다음 노드로의 이동 형태 (`flat`/`stairs`/`branch`). 마지막 노드는 `null` |
 
 ### 5.3.5 오류 응답
 
@@ -163,8 +178,9 @@ flowchart LR
 |---|---|---|
 | 400 | `INVALID_PAYLOAD` | `from` 또는 `to` 누락 |
 | 400 | `INVALID_NODE` | `from` 또는 `to` 가 그래프에 존재하지 않음 |
-| 400 | `DANGER_DESTINATION` | `to` 가 위험 노드로 지정되어 있음 |
-| 404 | `NO_ROUTE` | 위험 노드를 제외하면 도달 가능한 경로가 없음 |
+| 404 | `NO_ROUTE` | 도달 가능한 경로가 없음 |
+
+> ⚠️ `DANGER_DESTINATION` 에러 코드는 폐기되었다 (2026-05-21).
 
 ---
 
@@ -172,51 +188,51 @@ flowchart LR
 
 ### 5.4.1 기능 설명
 
-두 노드의 좌표를 기반으로 **절대 방향(0~360°)** 을 산출하여 반환한다. 앱은 이 값과 나침반 데이터를 비교하여 진동 패턴을 결정한다.
+두 노드 사이의 **사전 측정된 절대 방위각**을 반환한다. 박경찬님 현장 실측 데이터 (`node_directions`) 를 그대로 응답.
+
+> **변경 이력 (2026-05-21)**: `atan2` 좌표 계산 → DB/JSON 조회로 변경. 좌표(x, y) 시스템에서 제거됨.
 
 ### 5.4.2 처리 순서
 
 1. 입력 검증
-2. 그래프 JSON에서 `from`, `to` 의 좌표 조회
-3. `atan2(dy, dx)` 로 라디안 계산 → 도(°) 변환 → 0~360 정규화
-4. 결과 응답
+2. 그래프 JSON 의 `node_directions` 에서 `(from, to)` 키로 조회
+3. 미존재 시 `NOT_CONNECTED` 반환 (인접 노드가 아님 의미)
+4. 존재 시 `angle` + `cardinal` + `clock` 반환
 
 ### 5.4.3 요청 (Request)
 
 ```json
 {
-  "from": "A",
-  "to": "B"
+  "from": "station_exit",
+  "to": "floor1_hall"
 }
 ```
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `from` | string | ✓ | 현재 노드 ID |
-| `to` | string | ✓ | 다음 노드 ID |
+| `from` | string | ✓ | 현재 노드 ID (location) |
+| `to` | string | ✓ | 다음 노드 ID — `from` 과 직접 연결되어 있어야 함 |
 
 ### 5.4.4 응답 (Response)
 
 ```json
 {
-  "angle": 90
+  "angle": 268,
+  "cardinal": "W",
+  "clock": 9
 }
 ```
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `angle` | number | 0~360° 범위의 절대 방향 (정북 = 0°, 시계방향 가정) |
+| `angle` | number | 절대 방위각 (0~360°, 정북=0°, 시계방향) |
+| `cardinal` | string | 8방위 식별자 — `N` / `NE` / `E` / `SE` / `S` / `SW` / `W` / `NW` |
+| `clock` | integer | 시계 방향 (1~12시) |
 
 ### 5.4.5 좌표계 정의
 
-본 시스템은 다음 좌표 규약을 따른다.
-
-- **x 축 양의 방향** = 동(東)쪽
-- **y 축 양의 방향** = 북(北)쪽
-- **angle = 0°** = 정북 (`+y`)
-- 시계방향 회전을 양의 각도로 정의 → 동쪽 = 90°, 남쪽 = 180°, 서쪽 = 270°
-
-> 좌표계 약속은 앱·서버가 동일하게 따라야 하며, 나침반 데이터의 좌표계와 일치시켜야 한다. **합의 항목** *(09. 위험 요소 및 결정 항목 참조)*.
+- **angle = 0°** = 정북, **시계방향 양수** → 동쪽 = 90°, 남쪽 = 180°, 서쪽 = 270°
+- 폰의 자기센서(나침반) 좌표계와 일치하므로 앱은 차감만 하면 됨
 
 ### 5.4.6 오류 응답
 
@@ -224,7 +240,7 @@ flowchart LR
 |---|---|---|
 | 400 | `INVALID_PAYLOAD` | `from` 또는 `to` 누락 |
 | 400 | `INVALID_NODE` | `from` 또는 `to` 가 그래프에 존재하지 않음 |
-| 400 | `NOT_CONNECTED` | `from` 과 `to` 가 직접 연결되지 않은 노드 |
+| 400 | `NOT_CONNECTED` | `(from, to)` 쌍의 방위각 데이터 없음 (직접 연결되지 않음) |
 
 ---
 
@@ -248,7 +264,6 @@ flowchart LR
 | `INVALID_PAYLOAD` | 400 | 요청 본문이 JSON이 아니거나 필수 필드 누락 |
 | `EMPTY_WIFI` | 400 | `/locate` 요청에 Wi-Fi 데이터가 비어있음 |
 | `INVALID_NODE` | 400 | 존재하지 않는 노드 ID |
-| `DANGER_DESTINATION` | 400 | 위험 노드를 목적지로 지정 |
 | `NOT_CONNECTED` | 400 | 직접 연결되지 않은 두 노드의 방향 요청 |
 | `NO_ROUTE` | 404 | 도달 가능한 경로 없음 |
 | `KNN_ERROR` | 500 | KNN 내부 오류 |

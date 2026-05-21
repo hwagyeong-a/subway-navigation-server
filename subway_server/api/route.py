@@ -7,7 +7,7 @@ from .errors import InvalidPayloadError
 
 @bp.route("/route", methods=["POST"])
 def route():
-    """경로 탐색 (위험 노드 자동 회피)
+    """경로 탐색 (hop 수 최소, edge_type 포함)
     ---
     tags:
       - route
@@ -25,45 +25,44 @@ def route():
           properties:
             from:
               type: string
-              example: "A"
+              example: "station_exit"
               description: 출발 노드 ID
             to:
               type: string
-              example: "F"
-              description: 목적지 노드 ID (위험 노드 지정 시 400)
+              example: "down_platform"
+              description: 목적지 노드 ID
           example:
-            from: "A"
-            to: "F"
+            from: "station_exit"
+            to: "down_platform"
     responses:
       200:
-        description: 경로 (출발지 → 목적지 노드 ID 순서 배열)
+        description: 출발지 → 목적지 경로. 각 노드에 floor / zone / edge_to_next 포함
         schema:
           type: object
           properties:
             path:
               type: array
-              items: { type: string }
-              example: ["A", "B", "C", "D", "F"]
+              items:
+                type: object
+                properties:
+                  node:         { type: string, example: "station_exit" }
+                  floor:        { type: string, example: "ground" }
+                  zone:         { type: string, example: "entrance" }
+                  edge_to_next: { type: string, example: "flat", description: "flat | stairs | branch | null(마지막 노드)" }
+              example:
+                - { node: "station_exit",   floor: "ground", zone: "entrance", edge_to_next: "flat" }
+                - { node: "floor1_hall",    floor: "1F",     zone: "hall",     edge_to_next: "flat" }
+                - { node: "fare_gate",      floor: "1F",     zone: "gate",     edge_to_next: "flat" }
+                - { node: "floor1_stairs",  floor: "1F",     zone: "stairs",   edge_to_next: "stairs" }
+                - { node: "stairs_mid",     floor: "mid",    zone: "stairs",   edge_to_next: "stairs" }
+                - { node: "b1_stairs",      floor: "B1",     zone: "stairs",   edge_to_next: "flat" }
+                - { node: "b1_elevator",    floor: "B1",     zone: "hall",     edge_to_next: "flat" }
+                - { node: "b1_down_stairs_front", floor: "B1", zone: "branch", edge_to_next: "branch" }
+                - { node: "down_platform",  floor: "B1",     zone: "platform", edge_to_next: null }
       400:
-        description: INVALID_NODE / DANGER_DESTINATION / INVALID_PAYLOAD
-        schema:
-          type: object
-          properties:
-            error:
-              type: object
-              properties:
-                code:    { type: string, example: "DANGER_DESTINATION" }
-                message: { type: string, example: "Destination is a danger node: 'E'" }
+        description: INVALID_NODE / INVALID_PAYLOAD
       404:
-        description: NO_ROUTE — 위험 노드 제외 시 도달 불가
-        schema:
-          type: object
-          properties:
-            error:
-              type: object
-              properties:
-                code:    { type: string, example: "NO_ROUTE" }
-                message: { type: string, example: "No safe route from 'A' to 'Z'" }
+        description: NO_ROUTE — 도달 불가
     """
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
@@ -74,5 +73,18 @@ def route():
         raise InvalidPayloadError("'from' and 'to' must be strings")
 
     graph: GraphData = current_app.config["GRAPH"]
-    path = dijkstra(graph, a, b)
-    return jsonify(path=path)
+    path_nodes = dijkstra(graph, a, b)
+
+    enriched: list[dict] = []
+    for i, nid in enumerate(path_nodes):
+        meta = graph.meta(nid)
+        next_node = path_nodes[i + 1] if i + 1 < len(path_nodes) else None
+        edge = graph.edge(nid, next_node) if next_node else None
+        enriched.append({
+            "node": nid,
+            "floor": meta.floor,
+            "zone": meta.zone,
+            "edge_to_next": edge.edge_type if edge else None,
+        })
+
+    return jsonify(path=enriched)

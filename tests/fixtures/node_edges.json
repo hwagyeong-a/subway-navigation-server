@@ -1,0 +1,12 @@
+[
+  { "from": "station_exit",  "to": "floor1_hall",   "edge_type": "flat" },
+  { "from": "floor1_hall",   "to": "station_exit",  "edge_type": "flat" },
+  { "from": "floor1_hall",   "to": "fare_gate",     "edge_type": "flat" },
+  { "from": "fare_gate",     "to": "floor1_hall",   "edge_type": "flat" },
+  { "from": "fare_gate",     "to": "floor1_stairs", "edge_type": "flat" },
+  { "from": "floor1_stairs", "to": "fare_gate",     "edge_type": "flat" },
+  { "from": "floor1_stairs", "to": "stairs_mid",    "edge_type": "stairs" },
+  { "from": "stairs_mid",    "to": "floor1_stairs", "edge_type": "stairs" },
+  { "from": "stairs_mid",    "to": "b1_stairs",     "edge_type": "stairs" },
+  { "from": "b1_stairs",     "to": "stairs_mid",    "edge_type": "stairs" }
+]
