@@ -10,8 +10,19 @@ def create_app(config_obj: type = Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_obj)
     app.config["GRAPH"] = load_graph(app.config["DATA_DIR"])
+
+    # Swagger UI "Try it out" 요청에 ngrok 경고 우회 헤더를 자동 주입.
+    # (ngrok 무료 도메인은 헤더 없으면 경고 HTML 을 반환함. ngrok 아닌
+    #  환경에선 이 헤더가 무시되므로 항상 켜둬도 무해.)
+    swagger_config = dict(Swagger.DEFAULT_CONFIG)
+    swagger_config["ui_params_text"] = (
+        '{ "requestInterceptor": (req) => { '
+        'req.headers["ngrok-skip-browser-warning"] = "true"; return req; } }'
+    )
+
     Swagger(
         app,
+        config=swagger_config,
         template={
             "info": {
                 "title": "지하철역 보행지원 서버 API",
