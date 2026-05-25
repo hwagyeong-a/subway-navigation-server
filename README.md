@@ -6,6 +6,8 @@
 
 ---
 
+> 🎯 **새로 합류한 팀원·새 Claude 세션은 먼저 [`ONBOARDING.md`](./ONBOARDING.md) 를 읽어주세요.** 현재 어디까지 진행됐고 다음에 뭘 해야 할지 정리되어 있습니다.
+
 ## 📋 목차
 
 - [Quick Start (실행 방법)](#-quick-start-실행-방법)

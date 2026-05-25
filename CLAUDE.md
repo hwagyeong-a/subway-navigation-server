@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+> **⚡ 새 세션 시작 시 가장 먼저 `ONBOARDING.md` 를 읽으세요.** 본인이 누구이고, 어디까지 진행됐고, 다음에 뭘 해야 하는지 정리되어 있습니다. 본 파일은 코드 컨벤션·통합 경계·금지 사항만 다룹니다.
+
 ## Project context
 - Graduation project: subway pedestrian navigation server for visually impaired users.
 - Team A (이예진) owns this Flask backend.
