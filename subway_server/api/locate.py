@@ -32,18 +32,19 @@ def locate():
                 properties:
                   bssid: { type: string, example: "aa:bb:cc:dd:ee:ff", description: AP MAC 주소 }
                   rssi:  { type: number, example: -65, description: "신호 세기 (dBm). int·float 모두 허용 (평균값 float 가능)" }
+                  ssid:  { type: string, example: "Korail_WiFi_Free", description: "AP 이름 (선택). 보내면 서버측 이동성 기기 필터가 활성화됨" }
           example:
             wifi:
-              - { bssid: "aa:bb:cc:dd:ee:ff", rssi: -65 }
-              - { bssid: "11:22:33:44:55:66", rssi: -72 }
-              - { bssid: "77:88:99:aa:bb:cc", rssi: -88 }
+              - { bssid: "aa:bb:cc:dd:ee:ff", rssi: -65, ssid: "Korail_WiFi_Free" }
+              - { bssid: "11:22:33:44:55:66", rssi: -72, ssid: "Public WiFi Free" }
+              - { bssid: "77:88:99:aa:bb:cc", rssi: -88, ssid: "U+zone" }
     responses:
       200:
         description: 추정된 노드 ID
         schema:
           type: object
           properties:
-            node: { type: string, example: "B" }
+            node: { type: string, example: "down_platform" }
       400:
         description: INVALID_PAYLOAD / EMPTY_WIFI
         schema:
@@ -91,7 +92,11 @@ def locate():
             raise InvalidPayloadError(
                 "Each wifi item requires string bssid and numeric rssi"
             )
-        samples.append(WifiSample(bssid=bssid, rssi=float(rssi)))
+        # ssid 는 선택. 있으면 서버측 이동성 기기 필터(wifi_filter)가 활용.
+        ssid = item.get("ssid")
+        if ssid is not None and not isinstance(ssid, str):
+            raise InvalidPayloadError("'ssid' must be a string if provided")
+        samples.append(WifiSample(bssid=bssid, rssi=float(rssi), ssid=ssid))
 
     try:
         node_id = estimate(samples)

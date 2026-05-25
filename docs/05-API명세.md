@@ -47,20 +47,22 @@
 ```mermaid
 sequenceDiagram
     participant App as 📱 앱
-    participant API as Flask API
-    participant KNN as KNN 모듈
+    participant API as Flask API<br/>(api/locate.py)
+    participant KNN as KNN 모듈<br/>(core/knn.py)
     participant DB as MySQL
 
     App->>API: POST /locate (Wi-Fi 데이터)
-    API->>API: 입력 검증
-    API->>DB: SELECT fingerprint
-    DB-->>API: 모든 노드 샘플
-    API->>API: BSSID 정렬<br/>(DB 순서 일치)
-    API->>API: 결측 AP를 -100으로 채움
-    API->>KNN: KNN 실행
+    API->>API: 입력 검증 (bssid/rssi/ssid)
+    API->>KNN: estimate(samples) 호출
+    Note over KNN: 이동성 SSID·약신호 필터 (wifi_filter)
+    KNN->>DB: fingerprints 조회 (BSSID 순서)
+    DB-->>KNN: 노드별 평균 신호
+    Note over KNN: BSSID 정렬 + 결측 -100 채움<br/>(normalize_wifi) → KNN 분류
     KNN-->>API: 추정 노드 ID
     API-->>App: { "node": "..." }
 ```
+
+> **책임 주체 주의**: 입력 검증은 API 레이어(`api/locate.py`), **BSSID 정렬·결측 -100 채움·SSID 필터·DB 조회·KNN 분류는 모두 KNN 모듈(`core/knn.py`, 팀 B)** 안에서 일어난다. API 는 `estimate()` 호출만 한다.
 
 ### 5.2.3 요청 (Request)
 
@@ -84,6 +86,7 @@ Content-Type: application/json
 | `wifi` | array | ✓ | 측정된 AP 목록 |
 | `wifi[].bssid` | string | ✓ | AP의 MAC 주소 |
 | `wifi[].rssi` | number | ✓ | 신호 세기 (dBm 단위, 음수). **int·float 모두 허용** — 앱이 최근 N개 평균을 보내면 float 가 될 수 있어 서버가 둘 다 수용 |
+| `wifi[].ssid` | string | ✗ | AP 이름 (선택). 보내면 **서버측 이동성 기기 SSID 필터**가 활성화됨 (`iPhone`, `[dryer]` 등 제거). 앱이 이미 필터링했어도 2차 안전망으로 권장 |
 
 ### 5.2.4 응답 (Response)
 
@@ -94,13 +97,13 @@ Content-Type: application/json
 
 ```json
 {
-  "node": "B"
+  "node": "down_platform"
 }
 ```
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `node` | string | KNN으로 추정된 노드 ID |
+| `node` | string | KNN으로 추정된 노드 ID (예: `station_exit`, `down_platform` 등 의미 ID) |
 
 ### 5.2.5 오류 응답
 
@@ -266,6 +269,8 @@ flowchart LR
 | `INVALID_NODE` | 400 | 존재하지 않는 노드 ID |
 | `NOT_CONNECTED` | 400 | 직접 연결되지 않은 두 노드의 방향 요청 |
 | `NO_ROUTE` | 404 | 도달 가능한 경로 없음 |
+| `NOT_FOUND` | 404 | 존재하지 않는 URL (잘못된 경로 호출) |
+| `METHOD_NOT_ALLOWED` | 405 | 허용되지 않은 HTTP 메서드 (예: POST 엔드포인트에 GET) |
 | `KNN_ERROR` | 500 | KNN 내부 오류 |
 | `DB_ERROR` | 500 | 데이터베이스 접근 오류 |
 | `INTERNAL_ERROR` | 500 | 그 외 서버 내부 오류 |

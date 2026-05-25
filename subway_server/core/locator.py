@@ -12,6 +12,7 @@ from typing import Callable
 class WifiSample:
     bssid: str
     rssi: float  # int·float 모두 허용 (앱이 최근 N개 평균을 보내면 float)
+    ssid: str | None = None  # 선택. 있으면 서버측 이동성 기기 SSID 필터가 활성화됨
 
 
 LocationEstimator = Callable[[list[WifiSample]], str]
