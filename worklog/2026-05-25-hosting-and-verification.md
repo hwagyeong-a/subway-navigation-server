@@ -35,6 +35,7 @@
 - `25f1df7` fix(deps): add scikit-learn to requirements.txt
 - `fe51501` feat(swagger): auto-inject ngrok-skip-browser-warning header
 - `b13104e` test: add real-data API verification script
+- `164871f` docs: record 2026-05-25 hosting + verification progress
 
 ## 로컬 실행 메모 (재현용)
 ```bash
