@@ -83,7 +83,7 @@ Content-Type: application/json
 |---|---|---|---|
 | `wifi` | array | ✓ | 측정된 AP 목록 |
 | `wifi[].bssid` | string | ✓ | AP의 MAC 주소 |
-| `wifi[].rssi` | integer | ✓ | 신호 세기 (dBm 단위, 음수) |
+| `wifi[].rssi` | number | ✓ | 신호 세기 (dBm 단위, 음수). **int·float 모두 허용** — 앱이 최근 N개 평균을 보내면 float 가 될 수 있어 서버가 둘 다 수용 |
 
 ### 5.2.4 응답 (Response)
 

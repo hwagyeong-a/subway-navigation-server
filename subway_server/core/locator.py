@@ -11,7 +11,7 @@ from typing import Callable
 @dataclass(frozen=True)
 class WifiSample:
     bssid: str
-    rssi: int
+    rssi: float  # int·float 모두 허용 (앱이 최근 N개 평균을 보내면 float)
 
 
 LocationEstimator = Callable[[list[WifiSample]], str]

@@ -30,8 +30,8 @@ def locate():
                 type: object
                 required: [bssid, rssi]
                 properties:
-                  bssid: { type: string,  example: "aa:bb:cc:dd:ee:ff", description: AP MAC 주소 }
-                  rssi:  { type: integer, example: -65, description: 신호 세기 (dBm) }
+                  bssid: { type: string, example: "aa:bb:cc:dd:ee:ff", description: AP MAC 주소 }
+                  rssi:  { type: number, example: -65, description: "신호 세기 (dBm). int·float 모두 허용 (평균값 float 가능)" }
           example:
             wifi:
               - { bssid: "aa:bb:cc:dd:ee:ff", rssi: -65 }
@@ -81,11 +81,17 @@ def locate():
             raise InvalidPayloadError("Each wifi item must be an object")
         bssid = item.get("bssid")
         rssi = item.get("rssi")
-        if not isinstance(bssid, str) or not isinstance(rssi, int):
+        # rssi 는 int 또는 float 허용 (앱이 최근 N개 평균을 보내면 float).
+        # bool 은 isinstance(True, int) 가 True 라 명시적으로 배제.
+        if (
+            not isinstance(bssid, str)
+            or isinstance(rssi, bool)
+            or not isinstance(rssi, (int, float))
+        ):
             raise InvalidPayloadError(
-                "Each wifi item requires string bssid and integer rssi"
+                "Each wifi item requires string bssid and numeric rssi"
             )
-        samples.append(WifiSample(bssid=bssid, rssi=rssi))
+        samples.append(WifiSample(bssid=bssid, rssi=float(rssi)))
 
     try:
         node_id = estimate(samples)

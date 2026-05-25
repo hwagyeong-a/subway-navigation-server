@@ -11,6 +11,26 @@ def test_locate_returns_estimator_result(client, fake_estimator):
     assert res.get_json() == {"node": "fare_gate"}
 
 
+def test_locate_accepts_float_rssi(client, fake_estimator):
+    # 앱이 최근 N개 평균(float)을 보내도 받아야 함
+    fake_estimator("fare_gate")
+    res = client.post(
+        "/locate",
+        json={"wifi": [{"bssid": "aa:bb:cc:dd:ee:ff", "rssi": -65.33}]},
+    )
+    assert res.status_code == 200
+    assert res.get_json() == {"node": "fare_gate"}
+
+
+def test_locate_rejects_bool_rssi(client):
+    # bool 은 isinstance(True, int) 가 True 라 명시적으로 거부되어야 함
+    res = client.post(
+        "/locate", json={"wifi": [{"bssid": "aa", "rssi": True}]}
+    )
+    assert res.status_code == 400
+    assert res.get_json()["error"]["code"] == "INVALID_PAYLOAD"
+
+
 def test_locate_empty_wifi_returns_400(client):
     res = client.post("/locate", json={"wifi": []})
     assert res.status_code == 400
