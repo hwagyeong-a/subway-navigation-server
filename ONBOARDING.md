@@ -74,9 +74,16 @@
 | 단위 + 통합 + E2E (HTTP smoke + Playwright UI) 테스트 72개 | 본인 | `tests/` |
 | 안드로이드 앱 1차 (4 화면 + TTS + 진동) | 최수빈 | `csb2000/subway-navigation-app` |
 
-### 🟡 현재 임계 경로 — **서버 호스팅**
+### 🟡 현재 임계 경로 — **앱 ↔ 서버 통합 테스트**
 
-최수빈 앱이 `/locate /route /direction` 을 호출할 수 있어야 통합 테스트 가능. 호스팅 옵션 미결.
+서버 호스팅은 **완료** (05-25, ngrok). 이제 최수빈 앱이 ngrok 주소로 4개 화면 동작 확인만 남음.
+
+**현재 호스팅 상태** (노트북 켜져 있을 때):
+- ngrok 고정 주소: `https://sporty-press-unfeeling.ngrok-free.dev`
+- Flask 포트 **5001** (5000 은 macOS AirPlay 충돌)
+- 로컬 Docker MySQL `subway_nav` (포트 6306, root/lowell), fingerprints 483행
+- 재기동: `FLASK_PORT=5001 python app.py` + `ngrok http --url=sporty-press-unfeeling.ngrok-free.dev 5001`
+- 상세: `worklog/2026-05-25-hosting-and-verification.md`
 
 ### ⏳ 6/12 발표까지 남은 작업
 
