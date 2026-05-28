@@ -16,7 +16,8 @@ from .wifi import normalize_wifi
 from .wifi_filter import filter_wifi_samples
 
 
-K = 3
+# K 기본값. _ensure_loaded 에서 config 의 KNN_K 로 덮어씀.
+_DEFAULT_K = 5
 
 _bssid_order: Optional[List[str]] = None
 _classifier: Optional[KNeighborsClassifier] = None
@@ -31,7 +32,12 @@ def _ensure_loaded() -> None:
 
     repo = FingerprintRepository()
     _bssid_order = repo.list_bssid_order()
-    train_data = repo.load_training_set()
+
+    # [개선] raw 개별 스캔으로 학습 (노드당 여러 샘플 → 측위 안정).
+    # raw 가 비어 있으면 기존 평균 방식으로 폴백.
+    train_data = repo.load_training_set_from_raw()
+    if not train_data:
+        train_data = repo.load_training_set()
 
     if not train_data:
         _loaded = True
@@ -40,7 +46,9 @@ def _ensure_loaded() -> None:
     X = np.array([vec for _, vec in train_data], dtype=np.float32)
     y = np.array([node_id for node_id, _ in train_data])
 
-    k_actual = min(K, len(train_data))
+    # [개선] config 의 KNN_K 사용 (없으면 기본 5). 데이터 수보다 크지 않게.
+    k_cfg = current_app.config.get("KNN_K", _DEFAULT_K)
+    k_actual = min(k_cfg, len(train_data))
     _classifier = KNeighborsClassifier(
         n_neighbors=k_actual,
         weights="distance",
