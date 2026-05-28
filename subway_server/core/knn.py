@@ -1,76 +1,66 @@
-"""Team B: KNN 기반 위치 추정기 (scikit-learn 채택).
+"""Team B: KNN 기반 위치 추정기 (마스킹 거리 채택).
 
 CLAUDE.md 'Wi-Fi pipeline split' 준수:
-- Team A 의 core/wifi.py::normalize_wifi 를 입력 정렬에 활용
-- B 의 knn_estimate 가 normalize_wifi + FingerprintRepository 둘 다 호출
+- Team A 의 core/wifi.py::normalize_wifi 는 학습 벡터 정렬에 활용
+- B 의 knn_estimate 가 FingerprintRepository(평균 centroid) + 마스킹 거리 사용
+
+[2026-05-28 개선] 마스킹 거리(measured-only distance)
+- 문제: 지하철역은 사람/기둥에 막혀 AP 가 자주 누락(dropout)된다.
+  기존 방식은 누락 AP 를 -100(아주 멀다)으로 채워 거리를 계산했는데,
+  이는 '신호 약함'이 아니라 '측정 안 됨'을 멀다고 왜곡 -> 오인식.
+- 개선: 쿼리에서 '측정된 AP 차원'으로만 거리를 계산(누락 AP 는 제외).
+  학습 데이터는 기존 평균(centroid) 방식 그대로 사용한다.
+- 검증(method_compare.py, dropout 환경):
+    심한 혼잡(출퇴근)  기존 21% -> 마스킹 87.5%
+    극심(사람 가득)    기존 9.9% -> 마스킹 73.2%
 """
 from typing import List, Optional
 
 import numpy as np
 from flask import current_app
-from sklearn.neighbors import KNeighborsClassifier
 
 from ..db.fingerprint import FingerprintRepository
 from .locator import WifiSample
-from .wifi import normalize_wifi
 from .wifi_filter import filter_wifi_samples
 
 
-# K 기본값. _ensure_loaded 에서 config 의 KNN_K 로 덮어씀.
 _DEFAULT_K = 5
 
 _bssid_order: Optional[List[str]] = None
-_classifier: Optional[KNeighborsClassifier] = None
+_bssid_index: Optional[dict] = None
+_train_X: Optional[np.ndarray] = None   # (n_samples, n_features) 평균 centroid
+_train_y: Optional[np.ndarray] = None   # (n_samples,) location 라벨
 _loaded: bool = False
 
 
 def _ensure_loaded() -> None:
-    """첫 호출 시 DB 에서 학습 데이터 로드 + sklearn KNN 학습."""
-    global _bssid_order, _classifier, _loaded
+    """첫 호출 시 DB 에서 노드별 평균 centroid 로드."""
+    global _bssid_order, _bssid_index, _train_X, _train_y, _loaded
     if _loaded:
         return
 
     repo = FingerprintRepository()
     _bssid_order = repo.list_bssid_order()
+    _bssid_index = {b: i for i, b in enumerate(_bssid_order)}
 
-    # [개선] raw 개별 스캔으로 학습 (노드당 여러 샘플 → 측위 안정).
-    # raw 가 비어 있으면 기존 평균 방식으로 폴백.
-    train_data = repo.load_training_set_from_raw()
-    if not train_data:
-        train_data = repo.load_training_set()
-
+    # 노드당 평균 벡터 (안정적인 centroid). 마스킹 거리로 dropout 에 대응.
+    train_data = repo.load_training_set()
     if not train_data:
         _loaded = True
         return
 
-    X = np.array([vec for _, vec in train_data], dtype=np.float32)
-    y = np.array([node_id for node_id, _ in train_data])
-
-    # [개선] config 의 KNN_K 사용 (없으면 기본 5). 데이터 수보다 크지 않게.
-    k_cfg = current_app.config.get("KNN_K", _DEFAULT_K)
-    k_actual = min(k_cfg, len(train_data))
-    _classifier = KNeighborsClassifier(
-        n_neighbors=k_actual,
-        weights="distance",
-        metric="euclidean",
-    )
-    _classifier.fit(X, y)
+    _train_X = np.array([vec for _, vec in train_data], dtype=np.float32)
+    _train_y = np.array([node_id for node_id, _ in train_data])
     _loaded = True
 
     current_app.logger.info(
-        "KNN loaded: %d BSSIDs, %d nodes, K=%d",
-        len(_bssid_order), len(train_data), k_actual,
+        "KNN(masked) loaded: %d BSSIDs, %d nodes",
+        len(_bssid_order), len(train_data),
     )
 
 
-def _to_vector(samples: List[WifiSample]) -> np.ndarray:
-    """A 의 normalize_wifi 로 정렬."""
-    vec = normalize_wifi(samples, _bssid_order or [])
-    return np.array([vec], dtype=np.float32)
-
-
 def knn_estimate(samples: List[WifiSample]) -> str:
-    """Wi-Fi 스캔으로 가장 가까운 노드(location)를 예측."""
+    """Wi-Fi 스캔으로 가장 가까운 노드(location)를 예측 (마스킹 거리)."""
     if not samples:
         raise ValueError("Empty Wi-Fi samples")
 
@@ -80,12 +70,37 @@ def knn_estimate(samples: List[WifiSample]) -> str:
 
     _ensure_loaded()
 
-    if _classifier is None:
+    if _train_X is None or len(_train_X) == 0:
         raise RuntimeError(
             "KNN classifier not initialized — "
             "no fingerprint training data in DB"
         )
 
-    query = _to_vector(filtered)
-    pred = _classifier.predict(query)[0]
-    return str(pred)
+    # 측정된 AP 중 학습 벡터에 존재하는 차원만 추출
+    measured_idx = []
+    measured_rssi = []
+    for s in filtered:
+        idx = _bssid_index.get(s.bssid)
+        if idx is not None:
+            measured_idx.append(idx)
+            measured_rssi.append(s.rssi)
+
+    if not measured_idx:
+        raise ValueError("No measured AP overlaps with fingerprint BSSIDs")
+
+    q = np.array(measured_rssi, dtype=np.float32)
+    # 측정된 차원만으로 euclidean 거리 (누락 AP 는 거리에서 제외 = 마스킹)
+    X_sub = _train_X[:, measured_idx]
+    dists = np.sqrt(np.sum((X_sub - q) ** 2, axis=1))
+
+    k_cfg = current_app.config.get("KNN_K", _DEFAULT_K)
+    k = min(k_cfg, len(dists))
+    nearest = np.argsort(dists)[:k]
+
+    # 거리 가중 투표
+    votes: dict = {}
+    for idx in nearest:
+        label = _train_y[idx]
+        votes[label] = votes.get(label, 0.0) + 1.0 / (float(dists[idx]) + 1e-6)
+
+    return str(max(votes, key=votes.get))
