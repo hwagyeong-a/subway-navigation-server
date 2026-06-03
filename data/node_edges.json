@@ -9,14 +9,12 @@
   { "from": "b1_up_stairs_front",   "to": "b1_down_stairs_front", "edge_type": "branch" },
   { "from": "b1_up_stairs_front",   "to": "up_platform",          "edge_type": "stairs" },
   { "from": "down_platform",        "to": "b1_down_stairs_front", "edge_type": "branch" },
-  { "from": "fare_gate",            "to": "floor1_hall",          "edge_type": "flat"   },
   { "from": "fare_gate",            "to": "floor1_stairs",        "edge_type": "flat"   },
-  { "from": "floor1_hall",          "to": "fare_gate",            "edge_type": "flat"   },
-  { "from": "floor1_hall",          "to": "station_exit",         "edge_type": "flat"   },
+  { "from": "fare_gate",            "to": "station_exit",         "edge_type": "flat"   },
   { "from": "floor1_stairs",        "to": "fare_gate",            "edge_type": "flat"   },
   { "from": "floor1_stairs",        "to": "stairs_mid",           "edge_type": "stairs" },
   { "from": "stairs_mid",           "to": "b1_stairs",            "edge_type": "stairs" },
   { "from": "stairs_mid",           "to": "floor1_stairs",        "edge_type": "stairs" },
-  { "from": "station_exit",         "to": "floor1_hall",          "edge_type": "flat"   },
+  { "from": "station_exit",         "to": "fare_gate",            "edge_type": "flat"   },
   { "from": "up_platform",          "to": "b1_up_stairs_front",   "edge_type": "stairs" }
 ]

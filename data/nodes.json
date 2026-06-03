@@ -1,6 +1,5 @@
 {
   "station_exit":          { "node_order": 1,  "floor": "ground", "zone": "entrance", "description": "역 지상 출입구" },
-  "floor1_hall":           { "node_order": 2,  "floor": "1F",     "zone": "hall",     "description": "1층 홀" },
   "fare_gate":             { "node_order": 3,  "floor": "1F",     "zone": "gate",     "description": "개찰구" },
   "floor1_stairs":         { "node_order": 4,  "floor": "1F",     "zone": "stairs",   "description": "1층 계단 시작" },
   "stairs_mid":            { "node_order": 5,  "floor": "mid",    "zone": "stairs",   "description": "층 사이 계단 중앙" },
